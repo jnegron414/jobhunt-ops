@@ -36,6 +36,7 @@ cp targets.example.yaml ~/jobhunt-data/data/targets.yaml   # then edit
 | `track ls [--stage --tier --stale]` | List applications (`--stale` = quiet 7+ days) |
 | `track stats` | Funnel counts, response rate, avg days-in-stage |
 | `.venv/bin/python scripts/email_sync.py [--apply]` | Gmail readonly sync of `jobhunt`-labeled threads; auto-advances only lead->applied, everything else is a suggestion until `--apply` |
+| `make morning` | The whole morning in one command: scrape + digest + email sync + `track today` |
 
 Add the alias: `alias track='~/jobhunt-ops/.venv/bin/python ~/jobhunt-ops/scripts/tracker.py'`
 
