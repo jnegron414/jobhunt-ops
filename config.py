@@ -7,6 +7,15 @@ import os
 import sqlite3
 from pathlib import Path
 
+# Load .env (simple KEY=VALUE lines) without a dependency
+_env_file = Path(__file__).parent / ".env"
+if _env_file.exists():
+    for _line in _env_file.read_text().splitlines():
+        _line = _line.strip()
+        if _line and not _line.startswith("#") and "=" in _line:
+            _k, _v = _line.split("=", 1)
+            os.environ.setdefault(_k.strip(), _v.strip())
+
 # ---------------------------------------------------------------- data layout
 DATA_DIR = Path(os.environ.get("JOBHUNT_DATA_DIR", "~/jobhunt-data")).expanduser()
 DB_PATH = DATA_DIR / "db" / "pipeline.sqlite3"
@@ -78,6 +87,7 @@ def get_db():
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
     conn.executescript(SCHEMA)
+    conn.executescript(TRACKER_SCHEMA)  # defined below; resolved at call time
     return conn
 
 
@@ -88,3 +98,41 @@ def load_targets():
         print(f"[config] {TARGETS_FILE} not found; using {path.name} (fill in your real targets)")
     with open(path) as f:
         return yaml.safe_load(f) or []
+
+GMAIL_CREDENTIALS_PATH = Path(os.environ.get(
+    "GMAIL_CREDENTIALS_PATH", str(DATA_DIR / "gmail_credentials.json"))).expanduser()
+GMAIL_TOKEN_PATH = DATA_DIR / "gmail_token.json"
+
+STAGES = ["lead", "applied", "screen", "tech", "onsite", "offer",
+          "closed_won", "closed_lost", "ghosted"]
+ACTIVE_STAGES = ["lead", "applied", "screen", "tech", "onsite", "offer"]
+
+TRACKER_SCHEMA = """
+CREATE TABLE IF NOT EXISTS applications (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    company TEXT NOT NULL,
+    role TEXT NOT NULL,
+    url TEXT,
+    source TEXT,
+    stage TEXT DEFAULT 'lead',
+    resume_variant TEXT,
+    applied_at TEXT,
+    updated_at TEXT,
+    next_action TEXT,
+    next_action_date TEXT,
+    notes TEXT,
+    jd_text TEXT
+);
+CREATE TABLE IF NOT EXISTS contacts (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    company TEXT, name TEXT, role TEXT, email TEXT, linkedin TEXT,
+    relationship TEXT, last_touch TEXT, notes TEXT
+);
+CREATE TABLE IF NOT EXISTS events (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    application_id INTEGER,
+    ts TEXT NOT NULL,
+    type TEXT NOT NULL,
+    detail TEXT
+);
+"""

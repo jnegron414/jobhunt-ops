@@ -114,7 +114,16 @@ Read voice_samples (match my voice: direct, warm, no corporate-speak, no em dash
 ### /brief `<company> [stage]`
 Read tracker DB (read-only), events, contacts, resume variant sent → web-research company (product paragraph, 12-month funding/news, eng blog, stack signals, interview-format intel) → read gap_notes if present → `briefs/<company>/brief_<date>.md`, ≤1 page: snapshot / why-them-why-me / prior touchpoints / likely format this stage / 3 gaps with counter-stories / 5 sharp questions.
 
-**Acceptance:** /tailor against one real JD + /brief for one company; outputs land correctly and pass a 30-second sanity check.
+### Phase 3 additions (agreed 2026-09-02, patterns carried from prior work)
+- `scripts/verify_tailored.py`: deterministic claims-check gate — every number,
+  percentage, and technology term in a tailored resume must appear in
+  resume_base/bullet_bank; unsourced claims print as FLAGs. /tailor runs it last.
+- Shared per-company knowledge file `applications/<company>/profile.md`, read and
+  appended by all three commands; human edits are terminal.
+- Assume-and-disclose rule in all command prompts: at most one clarifying
+  question, otherwise assume and list assumptions in the closing summary.
+
+**Acceptance:** /tailor against one real JD + /brief for one company; outputs land correctly and pass a 30-second sanity check; verify_tailored flags a planted fake number.
 
 ---
 

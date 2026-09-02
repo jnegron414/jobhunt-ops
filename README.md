@@ -29,10 +29,17 @@ cp targets.example.yaml ~/jobhunt-data/data/targets.yaml   # then edit
 |---|---|
 | `.venv/bin/python scripts/scrape_boards.py` | Scrape all targets' public ATS boards into the postings DB (filter + score) |
 | `.venv/bin/python scripts/digest.py` | Write/print today's digest of new postings, best score first; silent if nothing new |
+| `track today` | Morning view: due next-actions + stale active applications |
+| `track add <co> <role> [--jd path]` | Add an application (store the JD text; postings go 404) |
+| `track move <id> <stage> [--note]` | Advance/close an application (stages: lead applied screen tech onsite offer closed_won closed_lost ghosted) |
+| `track note <id> "text"` / `track next <id> "action" --date YYYY-MM-DD` | Notes and next actions |
+| `track ls [--stage --tier --stale]` | List applications (`--stale` = quiet 7+ days) |
+| `track stats` | Funnel counts, response rate, avg days-in-stage |
+| `.venv/bin/python scripts/email_sync.py [--apply]` | Gmail readonly sync of `jobhunt`-labeled threads; auto-advances only lead->applied, everything else is a suggestion until `--apply` |
 
-Phase 2 will add `scripts/tracker.py` (application tracker CLI) and
-`scripts/email_sync.py` (Gmail readonly sync). Phase 3 adds the
-`/tailor`, `/outreach`, `/brief` Claude Code commands.
+Add the alias: `alias track='~/jobhunt-ops/.venv/bin/python ~/jobhunt-ops/scripts/tracker.py'`
+
+Phase 3 adds the `/tailor`, `/outreach`, `/brief` Claude Code commands.
 
 ## Cron
 
@@ -51,8 +58,12 @@ crontab -e   # then paste the line from crontab.example (weekdays 7:30am)
 2. Put your resume in `~/jobhunt-data/data/resume_base.md` and career record
    in `career_record.md`; extract `bullet_bank.md` + `war_stories.md` from it.
 3. Paste 3–4 of your own emails into `~/jobhunt-data/data/voice_samples.md`.
-4. (Phase 2) Create Gmail label `jobhunt` + OAuth desktop-app credentials in
-   Google Cloud console; put the JSON path in `.env`. Readonly scope only.
+4. Gmail sync: create the Gmail label `jobhunt` (swipe it onto job threads);
+   in Google Cloud console create an OAuth client (type: Desktop app) with the
+   Gmail API enabled, download the JSON to the path in `.env`
+   (`GMAIL_CREDENTIALS_PATH`). First run of `email_sync.py` opens the browser
+   consent screen once; the token caches in your data dir. Scope is
+   gmail.readonly — the tool cannot send, modify, or delete mail.
 5. Install the crontab.
 
 ## Design notes
