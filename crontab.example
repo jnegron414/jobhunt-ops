@@ -1,0 +1,1 @@
+30 7 * * 1-5  cd ~/jobhunt-ops && .venv/bin/python scripts/scrape_boards.py && .venv/bin/python scripts/digest.py

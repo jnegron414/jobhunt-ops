@@ -1,0 +1,79 @@
+# Copy to $JOBHUNT_DATA_DIR/data/targets.yaml and edit.
+# ats: greenhouse | lever | ashby | manual   (manual = no scrapable board; tier-1
+# manual companies appear as a Monday reminder in the digest)
+# tier: 1 = dream, 2 = strong, 3 = fine
+- name: Plaid
+  ats: ashby
+  token: plaid
+  tier: 1
+  notes: ""
+- name: Anthropic
+  ats: greenhouse
+  token: anthropic
+  tier: 1
+  notes: ""
+- name: OpenAI
+  ats: ashby
+  token: openai
+  tier: 2
+  notes: ""
+- name: Ramp
+  ats: ashby
+  token: ramp
+  tier: 2
+  notes: ""
+- name: Mercury
+  ats: greenhouse
+  token: mercury
+  tier: 2
+  notes: ""
+- name: Dwolla
+  ats: manual
+  token: ""
+  tier: 2
+  notes: ""
+- name: RevenueCat
+  ats: ashby
+  token: revenuecat
+  tier: 2
+  notes: ""
+- name: Stripe
+  ats: greenhouse
+  token: stripe
+  tier: 1
+  notes: ""
+- name: Unit
+  ats: manual
+  token: ""
+  tier: 3
+  notes: ""
+- name: Monarch Money
+  ats: manual
+  token: ""
+  tier: 3
+  notes: ""
+- name: Rocket Money
+  ats: manual
+  token: ""
+  tier: 3
+  notes: ""
+- name: Brex
+  ats: greenhouse
+  token: brex
+  tier: 3
+  notes: ""
+- name: Modern Treasury
+  ats: ashby
+  token: moderntreasury
+  tier: 2
+  notes: ""
+- name: Column
+  ats: manual
+  token: ""
+  tier: 3
+  notes: ""
+- name: Lithic
+  ats: greenhouse
+  token: lithic
+  tier: 3
+  notes: ""
