@@ -42,6 +42,10 @@ def get_service():
                 print(f"[email_sync] no Gmail credentials at {config.GMAIL_CREDENTIALS_PATH} — "
                       "see README 'Manual setup'. Skipping.")
                 sys.exit(0)
+            if not sys.stdin.isatty():
+                print("[email_sync] Gmail consent needed but not interactive (cron); "
+                      "run once from a terminal. Skipping.")
+                sys.exit(0)
             flow = InstalledAppFlow.from_client_secrets_file(
                 str(config.GMAIL_CREDENTIALS_PATH), SCOPES)
             creds = flow.run_local_server(port=0)
