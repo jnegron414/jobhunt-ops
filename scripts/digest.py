@@ -21,9 +21,27 @@ def _age_label(p):
     return f"{approx}{days}d old"
 
 
+def _dna_filter(rows, dna):
+    """Drop 'hold' companies; return (kept_rows, {company: why} suppressed)."""
+    kept, suppressed = [], {}
+    for p in rows:
+        entry = dna.get(p["company"].strip().lower())
+        if entry and entry[0] == "hold":
+            suppressed[p["company"]] = entry[1]
+        else:
+            kept.append(p)
+    return kept, suppressed
+
+
+def _caution_tag(p, dna):
+    entry = dna.get(p["company"].strip().lower())
+    return f" [CAUTION: {entry[1]}]" if entry and entry[0] == "caution" else ""
+
+
 def main():
     conn = config.get_db()
     today = date.today().isoformat()
+    dna = config.load_do_not_apply()
 
     row = conn.execute("SELECT value FROM meta WHERE key='last_digest_at'").fetchone()
     last = row["value"] if row else "1970-01-01T00:00:00"
@@ -33,6 +51,7 @@ def main():
         "SELECT * FROM postings WHERE first_seen > ? ORDER BY score DESC, company",
         (last[:10],),
     ).fetchall()
+    new, suppressed_new = _dna_filter(new, dna)
 
     targets = config.load_targets()
     tier1 = [t["name"] for t in targets if t.get("tier", 3) == 1]
@@ -49,7 +68,7 @@ def main():
     if new:
         lines.append(f"## NEW ({len(new)})")
         for p in new:
-            lines.append(f"- **{p['score']}** | {p['company']} — {p['title']} "
+            lines.append(f"- **{p['score']}** | {p['company']}{_caution_tag(p, dna)} — {p['title']} "
                          f"({p['location'] or 'location n/a'}) — {_age_label(p)} — {p['url']}")
         lines.append("")
 
@@ -58,11 +77,16 @@ def main():
         "AND p.company IN ({}) ORDER BY p.score DESC".format(",".join("?" * len(tier1))),
         [today, last[:10], *tier1],
     ).fetchall() if tier1 else []
+    still, _ = _dna_filter(still, dna)
     if still:
         lines.append(f"## STILL OPEN — tier 1 ({len(still)})")
         for p in still:
-            lines.append(f"- **{p['score']}** | {p['company']} — {p['title']} "
+            lines.append(f"- **{p['score']}** | {p['company']}{_caution_tag(p, dna)} — {p['title']} "
                          f"({p['location'] or 'location n/a'}) — {_age_label(p)} — {p['url']}")
+        lines.append("")
+
+    if suppressed_new:
+        lines.append(f"_(suppressed: {', '.join(sorted(suppressed_new))} — on the do-not-apply list)_")
         lines.append("")
 
     if manual_reminder:

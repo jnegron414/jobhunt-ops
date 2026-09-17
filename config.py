@@ -108,6 +108,24 @@ def load_targets():
     with open(path) as f:
         return yaml.safe_load(f) or []
 
+def load_do_not_apply():
+    """Optional data/do_not_apply.yaml: [{name, level: hold|caution, why}].
+
+    'hold' companies are suppressed from digests/shortlists entirely (e.g.
+    current employer, conflict of interest, active business relationship);
+    'caution' companies are shown but flagged. Returns {lowercase name:
+    (level, why)}. Missing file = empty dict.
+    """
+    import yaml
+    path = DATA_DIR / "data" / "do_not_apply.yaml"
+    if not path.exists():
+        return {}
+    with open(path) as f:
+        rows = yaml.safe_load(f) or []
+    return {r["name"].strip().lower(): (r.get("level", "caution"), r.get("why", ""))
+            for r in rows if r.get("name")}
+
+
 GMAIL_CREDENTIALS_PATH = Path(os.environ.get(
     "GMAIL_CREDENTIALS_PATH", str(DATA_DIR / "gmail_credentials.json"))).expanduser()
 GMAIL_TOKEN_PATH = DATA_DIR / "gmail_token.json"
