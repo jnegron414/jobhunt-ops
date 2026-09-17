@@ -34,6 +34,11 @@ NOISE = ["linkedin.com", "udemymail.com", "amazon.com", "sofi", "citi.com",
          "no-reply", "noreply", "notifications@", "billing", "confirmation@",
          "receipt", "support@", "help@"]
 
+# ATS senders are exempt from NOISE in the pipeline pass: application
+# confirmations, scheduling, and rejections all come from these domains.
+ATS_DOMAINS = ["greenhouse.io", "greenhouse-mail", "lever.co", "hire.lever",
+               "ashbyhq.com", "wellfound.com", "myworkday", "smartrecruiters"]
+
 FLAGS_SCHEMA = """CREATE TABLE IF NOT EXISTS inbox_flags (
     thread_id TEXT PRIMARY KEY, kind TEXT, first_seen TEXT, subject TEXT,
     sender TEXT, resolved_at TEXT
@@ -80,8 +85,10 @@ def main():
         for tid, subj, sender, from_me, ts in sweep(
                 svc, f'newer_than:3d "{company}"', me, limit=10):
             # Skip transactional mail from the company's own product (being a
-            # CUSTOMER of a company you applied to floods this otherwise).
-            if from_me or any(n in sender.lower() for n in NOISE):
+            # CUSTOMER of a company you applied to floods this otherwise) —
+            # but always let ATS mail through: that IS the application signal.
+            is_ats = any(d in sender.lower() for d in ATS_DOMAINS)
+            if from_me or (not is_ats and any(n in sender.lower() for n in NOISE)):
                 continue
             when = datetime.fromtimestamp(ts).strftime("%m/%d %H:%M")
             updates.append(f"- **{company}**: {subj} — from {sender} ({when})")
