@@ -19,8 +19,10 @@ Two layers, deliberately separated (see `DECISIONS.md`):
 
 1. **Deterministic layer** (Python, cron-able): scrapes the public JSON job
    boards (Greenhouse / Lever / Ashby) of companies you name, filters to
-   roles matching your keywords, scores them, and writes a morning digest.
-   A SQLite tracker holds your application funnel.
+   roles matching your keywords, scores them, and writes a morning digest,
+   a ranked apply-shortlist, and (optionally) two auto-updating Google
+   Sheets. A SQLite tracker holds your application funnel, and a daily
+   Gmail sweep surfaces application updates and recruiters you owe a reply.
 2. **Intelligence layer** (Claude Code commands): `/tailor`, `/outreach`,
    `/brief` read your data dir and produce drafts — gated by a verifier that
    blocks any generated resume containing numbers not present in your own
@@ -36,6 +38,28 @@ between being read and being archived. Scores recompute at every scrape, so
 a posting's rank decays as it ages. Edit the keyword lists and
 `SCORE_WEIGHTS` / `RECENCY_BONUSES` at the top of `config.py` to match your
 own field and priorities — everything else is field-agnostic.
+
+### Do-not-apply list and risk numbers
+
+Some companies you shouldn't apply to even if they post great roles — a
+current employer, an active business relationship, a conflict of interest,
+or a direct competitor where a non-compete could bite. Declare them in
+`data/do_not_apply.yaml` (`- {name, level, why}`):
+
+- `hold` — never surfaced; suppressed from digests, shortlists, and sheets.
+- `caution` — shown but flagged; check the reason before applying.
+- `watch` — awareness only.
+
+Every surfaced posting carries a risk number: **r0** clear, **r1** watch,
+**r2** caution, **r3** suppressed. One gotcha the levels can't see:
+**subsidiaries**. A posting's company name won't match its parent, so if a
+parent company is on your list, grep the JD text ("wholly owned subsidiary
+of") — the raw JSON is stored per posting for exactly this.
+
+If the list lives in a spreadsheet you don't control (e.g. maintained by
+someone else in Airtable), `scripts/sync_do_not_apply.py` regenerates the
+YAML from it weekly — see its docstring; manual entries survive syncs via
+the `extra:` block in `do_not_apply_source.yaml`.
 
 ## Setup (~15 minutes)
 
@@ -147,15 +171,31 @@ Run these inside this repo with [Claude Code](https://claude.com/claude-code):
 
 ## Optional
 
-- **Cron:** `crontab -e`, paste the line from `crontab.example`
-  (weekday-morning `make morning`).
-- **Gmail sync** (`scripts/email_sync.py`): create a Gmail label `jobhunt`
-  and apply it to job threads; in Google Cloud console create a Desktop-app
-  OAuth client with the Gmail API enabled and download its JSON to
-  `GMAIL_CREDENTIALS_PATH` (see `.env`). First run opens a one-time consent
-  screen; the token caches in your data dir. Readonly scope — it can suggest
-  tracker updates from your mail (`--apply` to accept) but cannot send,
-  modify, or delete anything.
+- **Cron:** `crontab crontab.example` installs the full schedule — daily
+  7:30 scrape → digest → shortlist → sheet push, daily 7:45 inbox sweep,
+  weekly do-not-apply sync (Mon), weekly funnel stats (Fri).
+- **Google APIs (one OAuth client unlocks Sheets + Gmail):** in Google
+  Cloud console enable the **Gmail API** and **Google Sheets API**, add
+  yourself as a test user on the OAuth consent screen, create an OAuth
+  client (under "Clients" in the new Google Auth Platform UI — type:
+  Desktop app), and download its JSON to `GMAIL_CREDENTIALS_PATH` (see
+  `.env`). Then run `sheet_sync.py` and `inbox_watch.py` once from a
+  terminal — each opens a one-time browser consent; tokens cache in your
+  data dir and cron takes over. Gmail access is readonly scope: the tool
+  can suggest tracker updates from your mail (`email_sync.py --apply` to
+  accept) but can never send, modify, or delete anything.
+- **Google Sheets:** create two empty spreadsheets (or let your first CSVs
+  seed them), put their IDs in `.env` as `SHEET_TO_APPLY_ID` and
+  `SHEET_PIPELINE_ID`, and the daily cron rewrites them in place. The
+  SQLite tracker is the source of truth — hand-edits to the sheets are
+  overwritten; make changes via `track` instead.
+- **Salary column:** filled automatically where the ATS publishes it —
+  structured fields first, then pay-transparency ranges parsed from the
+  JD text (catches roughly 40% of postings).
+- **Personal noise filters:** senders the inbox sweep should never treat
+  as signal (your bank, your employer, apps that share a name with a
+  target company) go in `data/noise_senders.txt`, one substring per line —
+  outside the repo, like all personal data.
 
 ## Sharing this with someone else
 

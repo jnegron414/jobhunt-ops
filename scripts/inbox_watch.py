@@ -29,10 +29,15 @@ RECRUITER_QUERY = (
     'OR "your background" OR "open role" OR hiring OR "quick chat")'
 )
 # Senders that match the keywords but are never recruiters:
-NOISE = ["linkedin.com", "udemymail.com", "amazon.com", "sofi", "citi.com",
-         "rocketmortgage", "creditkarma", "piere.com", "newsletter",
+NOISE = ["linkedin.com", "udemymail.com", "amazon.com", "newsletter",
          "no-reply", "noreply", "notifications@", "billing", "confirmation@",
          "receipt", "support@", "help@"]
+# Personal additions (your bank, your employer, apps you use) live OUTSIDE the
+# repo in data/noise_senders.txt, one substring per line.
+_extra = config.DATA_DIR / "data" / "noise_senders.txt"
+if _extra.exists():
+    NOISE += [l.strip().lower() for l in _extra.read_text().splitlines()
+              if l.strip() and not l.startswith("#")]
 
 # ATS senders are exempt from NOISE in the pipeline pass: application
 # confirmations, scheduling, and rejections all come from these domains.
