@@ -6,7 +6,7 @@ companies, per-company failures logged and skipped.
 import json
 import sys
 import time
-from datetime import date
+from datetime import date, datetime, timezone
 from pathlib import Path
 
 import requests
@@ -30,6 +30,9 @@ def fetch_greenhouse(token):
             "location": (j.get("location") or {}).get("name", ""),
             "dept": ", ".join(d.get("name", "") for d in j.get("departments", []) or []),
             "description": j.get("content", "") or "",
+            # Greenhouse's board API only exposes updated_at — a proxy for
+            # posting date that resets on edits/reposts. Best available.
+            "posted_at": _iso_date(j.get("updated_at")),
             "raw": j,
         }
 
@@ -47,6 +50,7 @@ def fetch_lever(token):
             "location": cats.get("location", "") or "",
             "dept": cats.get("team", "") or "",
             "description": j.get("descriptionPlain", "") or "",
+            "posted_at": _epoch_ms_date(j.get("createdAt")),
             "raw": j,
         }
 
@@ -63,11 +67,42 @@ def fetch_ashby(token):
             "location": j.get("location", "") or "",
             "dept": j.get("department", "") or "",
             "description": j.get("descriptionPlain", "") or "",
+            "posted_at": _iso_date(j.get("publishedAt")),
             "raw": j,
         }
 
 
 FETCHERS = {"greenhouse": fetch_greenhouse, "lever": fetch_lever, "ashby": fetch_ashby}
+
+
+# ----------------------------------------------------------- date helpers
+def _iso_date(val):
+    """'2026-09-12T08:11:00Z' (or +offset) -> '2026-09-12'; None if unparseable."""
+    if not val:
+        return None
+    try:
+        return datetime.fromisoformat(str(val).replace("Z", "+00:00")).date().isoformat()
+    except ValueError:
+        return None
+
+
+def _epoch_ms_date(val):
+    """Lever createdAt epoch-milliseconds -> 'YYYY-MM-DD'; None if unparseable."""
+    if not val:
+        return None
+    try:
+        return datetime.fromtimestamp(int(val) / 1000, tz=timezone.utc).date().isoformat()
+    except (ValueError, OSError, OverflowError):
+        return None
+
+
+def posting_age_days(posted_at, first_seen):
+    """Days since the posting went up, falling back to when we first saw it."""
+    basis = posted_at or first_seen
+    try:
+        return (date.today() - date.fromisoformat(basis)).days
+    except (TypeError, ValueError):
+        return None
 
 
 # ------------------------------------------------------------ filter + score
@@ -104,6 +139,13 @@ def score(posting, tier):
         s += w["tier1_company"]
     if _contains_any(loc, ["remote", "new york", "nyc"]):
         s += w["remote_or_nyc"]
+    # Recency: fresh postings get a bonus, stale ones a penalty — applying in
+    # a posting's first days is when a human actually reads the application.
+    # first_seen may be None for a brand-new posting (not yet inserted): the
+    # posting went up no earlier than today, so age 0.
+    age = posting_age_days(posting.get("posted_at"), posting.get("first_seen")) or 0
+    s += next((bonus for max_days, bonus in config.RECENCY_BONUSES if age <= max_days),
+              config.RECENCY_STALE)
     return min(s, 100)
 
 
@@ -127,22 +169,34 @@ def main():
             for p in fetcher(t["token"]):
                 if not p["url"] or not passes_filter(p):
                     continue
+                row = conn.execute(
+                    "SELECT first_seen, posted_at FROM postings WHERE company=? AND url=?",
+                    (t["name"], p["url"]),
+                ).fetchone()
+                if row:
+                    p["first_seen"] = row["first_seen"]
+                    # Keep the earliest posted_at we've recorded: Greenhouse's
+                    # updated_at moves on every edit, which would fake freshness.
+                    if row["posted_at"] and (not p["posted_at"] or row["posted_at"] < p["posted_at"]):
+                        p["posted_at"] = row["posted_at"]
                 s = score(p, t.get("tier", 3))
-                cur = conn.execute(
-                    "UPDATE postings SET last_seen=?, score=?, title=?, location=?, dept=? "
-                    "WHERE company=? AND url=?",
-                    (today, s, p["title"], p["location"], p["dept"], t["name"], p["url"]),
-                )
-                if cur.rowcount == 0:
+                if row:
+                    conn.execute(
+                        "UPDATE postings SET last_seen=?, score=?, title=?, location=?, "
+                        "dept=?, posted_at=? WHERE company=? AND url=?",
+                        (today, s, p["title"], p["location"], p["dept"], p["posted_at"],
+                         t["name"], p["url"]),
+                    )
+                    updated += 1
+                else:
                     conn.execute(
                         "INSERT INTO postings (company, title, url, location, dept, "
-                        "first_seen, last_seen, raw_json, score) VALUES (?,?,?,?,?,?,?,?,?)",
+                        "first_seen, last_seen, posted_at, raw_json, score) "
+                        "VALUES (?,?,?,?,?,?,?,?,?,?)",
                         (t["name"], p["title"], p["url"], p["location"], p["dept"],
-                         today, today, json.dumps(p["raw"])[:20000], s),
+                         today, today, p["posted_at"], json.dumps(p["raw"])[:20000], s),
                     )
                     inserted += 1
-                else:
-                    updated += 1
                 count += 1
             print(f"[ok]   {t['name']} ({ats}): {count} matching postings")
         except Exception as e:  # noqa: BLE001 — per-company isolation is the point

@@ -57,6 +57,14 @@ SCORE_WEIGHTS = {
     "remote_or_nyc": 10,
 }
 
+# Recency: applications concentrate in a posting's first days, and older
+# postings usually have candidates deep in the pipeline — applying early is
+# the difference between being read and being archived. Recomputed at every
+# scrape, so scores decay as postings age. (days_old_max, bonus) pairs,
+# checked in order; postings older than the last threshold get RECENCY_STALE.
+RECENCY_BONUSES = [(3, 20), (7, 15), (14, 8), (30, 3), (45, 0)]
+RECENCY_STALE = -10
+
 REQUEST_DELAY_SECONDS = 1.0
 
 # ---------------------------------------------------------------- db helper
@@ -70,6 +78,7 @@ CREATE TABLE IF NOT EXISTS postings (
     dept TEXT,
     first_seen TEXT NOT NULL,
     last_seen TEXT NOT NULL,
+    posted_at TEXT,
     raw_json TEXT,
     score INTEGER DEFAULT 0,
     status TEXT DEFAULT 'new',

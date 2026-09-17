@@ -56,3 +56,12 @@ beats any framework here; the DB is disposable and rebuildable from a scrape.
 Postings get taken down constantly, and interview prep needs the original JD
 weeks later. `applications.jd_text` captures it when I apply, because by
 brief-time the URL is often a 404.
+
+## 8. Recency is a first-class scoring signal (2026-09-17)
+Applications concentrate in a posting's first days; late applications are often
+never read because the pipeline is already deep. So posting age now feeds the
+score: +20 (≤3d) / +15 (≤7d) / +8 (≤14d) / +3 (≤30d) / 0 (≤45d) / -10 (older),
+recomputed at every scrape so scores decay. True posting date comes from the
+ATS (Ashby publishedAt, Lever createdAt); Greenhouse only exposes updated_at,
+which resets on edits — we keep the earliest value ever seen to avoid fake
+freshness, and the digest marks discovery-date fallbacks with "~".

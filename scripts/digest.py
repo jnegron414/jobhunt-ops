@@ -11,6 +11,16 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 import config  # noqa: E402
 
 
+def _age_label(p):
+    """Posting age for a digest line: from posted_at (real posting date) when
+    the ATS provided one, else from first_seen (our discovery date, marked ~)."""
+    keys = p.keys()
+    posted = p["posted_at"] if "posted_at" in keys else None
+    basis, approx = (posted, "") if posted else (p["first_seen"], "~")
+    days = (date.today() - datetime.strptime(basis, "%Y-%m-%d").date()).days
+    return f"{approx}{days}d old"
+
+
 def main():
     conn = config.get_db()
     today = date.today().isoformat()
@@ -39,9 +49,8 @@ def main():
     if new:
         lines.append(f"## NEW ({len(new)})")
         for p in new:
-            days = (date.today() - datetime.strptime(p["first_seen"], "%Y-%m-%d").date()).days
             lines.append(f"- **{p['score']}** | {p['company']} — {p['title']} "
-                         f"({p['location'] or 'location n/a'}) — {days}d — {p['url']}")
+                         f"({p['location'] or 'location n/a'}) — {_age_label(p)} — {p['url']}")
         lines.append("")
 
     still = conn.execute(
@@ -52,9 +61,8 @@ def main():
     if still:
         lines.append(f"## STILL OPEN — tier 1 ({len(still)})")
         for p in still:
-            days = (date.today() - datetime.strptime(p["first_seen"], "%Y-%m-%d").date()).days
             lines.append(f"- **{p['score']}** | {p['company']} — {p['title']} "
-                         f"({p['location'] or 'location n/a'}) — {days}d — {p['url']}")
+                         f"({p['location'] or 'location n/a'}) — {_age_label(p)} — {p['url']}")
         lines.append("")
 
     if manual_reminder:
