@@ -108,6 +108,34 @@ def load_targets():
     with open(path) as f:
         return yaml.safe_load(f) or []
 
+def extract_salary(raw):
+    """Best-effort salary range from a posting's raw ATS JSON; '' if absent."""
+    if not raw:
+        return ""
+    # Greenhouse boards API (content=true): pay_input_ranges
+    for r in raw.get("pay_input_ranges") or []:
+        lo, hi = r.get("min_cents"), r.get("max_cents")
+        if lo and hi:
+            return f"${lo // 100000}k-{hi // 100000}k"
+    # Ashby: compensation.compensationTierSummary (a preformatted string)
+    comp = raw.get("compensation") or {}
+    if isinstance(comp, dict) and comp.get("compensationTierSummary"):
+        return str(comp["compensationTierSummary"])
+    # Lever: salaryRange {min, max}
+    sr = raw.get("salaryRange") or {}
+    if isinstance(sr, dict) and sr.get("min") and sr.get("max"):
+        return f"${int(sr['min']) // 1000}k-{int(sr['max']) // 1000}k"
+    return ""
+
+
+def guess_level(title):
+    t = (title or "").lower()
+    for marker in ("principal", "staff", "senior", "lead"):
+        if marker in t:
+            return marker.capitalize()
+    return ""
+
+
 def load_do_not_apply():
     """Optional data/do_not_apply.yaml: [{name, level: hold|caution, why}].
 
@@ -148,7 +176,10 @@ CREATE TABLE IF NOT EXISTS applications (
     next_action TEXT,
     next_action_date TEXT,
     notes TEXT,
-    jd_text TEXT
+    jd_text TEXT,
+    location TEXT,
+    salary TEXT,
+    level TEXT
 );
 CREATE TABLE IF NOT EXISTS contacts (
     id INTEGER PRIMARY KEY AUTOINCREMENT,

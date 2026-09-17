@@ -1,8 +1,8 @@
 PY := .venv/bin/python
 
-.PHONY: morning scrape digest shortlist sync today stats
+.PHONY: morning scrape digest shortlist sheets sync today stats
 
-morning: scrape digest shortlist sync today
+morning: scrape digest shortlist sheets sync today
 
 scrape:
 	$(PY) scripts/scrape_boards.py
@@ -12,6 +12,9 @@ digest:
 
 shortlist:
 	$(PY) scripts/shortlist.py
+
+sheets:
+	$(PY) scripts/sheet_sync.py
 
 sync:
 	$(PY) scripts/email_sync.py
