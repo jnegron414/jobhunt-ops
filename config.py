@@ -112,6 +112,8 @@ def extract_salary(raw):
     """Best-effort salary range from a posting's raw ATS JSON; '' if absent."""
     if not raw:
         return ""
+    if isinstance(raw, str):  # raw JSON text: no structured fields, regex only
+        raw = {"_text": raw}
     # Greenhouse boards API (content=true): pay_input_ranges
     for r in raw.get("pay_input_ranges") or []:
         lo, hi = r.get("min_cents"), r.get("max_cents")
@@ -125,6 +127,20 @@ def extract_salary(raw):
     sr = raw.get("salaryRange") or {}
     if isinstance(sr, dict) and sr.get("min") and sr.get("max"):
         return f"${int(sr['min']) // 1000}k-{int(sr['max']) // 1000}k"
+    # Fallback: pay-transparency laws put the range in the description text
+    # far more often than orgs fill the structured fields (13/40 vs 0/40 in
+    # a Sep 2026 sample). Match "$192,000 - $240,000" / "$150K–$180K".
+    import json as _json
+    import re as _re
+    text = raw if isinstance(raw, str) else _json.dumps(raw)
+    m = _re.search(
+        r"\$(\d{2,3})(?:,(\d{3})|[Kk])\s*(?:[-–—−]|to)\s*\$?\s*(\d{2,3})(?:,(\d{3})|[Kk])",
+        text)
+    if m:
+        lo = int(m.group(1)) if not m.group(2) else int(m.group(1) + m.group(2)) // 1000
+        hi = int(m.group(3)) if not m.group(4) else int(m.group(3) + m.group(4)) // 1000
+        if 40 <= lo < hi <= 900:  # sanity: plausible annual salary band in $k
+            return f"${lo}k-{hi}k"
     return ""
 
 
