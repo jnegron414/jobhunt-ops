@@ -34,8 +34,12 @@ def _dna_filter(rows, dna):
 
 
 def _caution_tag(p, dna):
+    """Conflict-risk tag: r2 caution / r1 watch. Holds never reach display."""
     entry = dna.get(p["company"].strip().lower())
-    return f" [CAUTION: {entry[1]}]" if entry and entry[0] == "caution" else ""
+    if not entry:
+        return ""
+    risk = {"caution": 2, "watch": 1}.get(entry[0])
+    return f" [r{risk}: {entry[1]}]" if risk else ""
 
 
 def main():

@@ -1,4 +1,4 @@
-30 7 * * 1-5  cd ~/jobhunt-ops && .venv/bin/python scripts/scrape_boards.py && .venv/bin/python scripts/digest.py
+30 7 * * *  cd ~/jobhunt-ops && .venv/bin/python scripts/scrape_boards.py && .venv/bin/python scripts/digest.py && .venv/bin/python scripts/shortlist.py
 # Friday 4pm: weekly funnel review written into the digests folder
 0 16 * * 5  cd ~/jobhunt-ops && .venv/bin/python scripts/tracker.py stats > ~/jobhunt-data/output/digests/$(date +\%Y-\%m-\%d)-stats.md 2>&1
 # Monday 7:20am: refresh the do-not-apply list from Airtable (no-op until AIRTABLE_TOKEN is set)
