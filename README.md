@@ -60,6 +60,50 @@ everything downstream — the better they are, the better `/tailor` is:
 | `war_stories.md` | STAR-format incident/project stories for behavioral interviews. `/brief` draws from these. |
 | `voice_samples.md` | 3–4 real emails you wrote, so `/outreach` drafts sound like you and not like an AI. |
 
+### Writing `career_record.md` and `bullet_bank.md` (the two hours that matter)
+
+Everything the tool generates is selection and compression from these two
+files — it can never be better than they are. What works:
+
+**career_record.md** — write it as an exhaustive private record, not a
+resume. Nobody sees it but you and the tool, so optimize for completeness
+and honesty, not polish:
+
+- Go project by project through your whole tenure (walk your merged PRs,
+  design docs, and tickets — memory alone misses half of it). For each:
+  what was broken or missing, what you built, how you verified it worked,
+  and what happened as a result.
+- **Numbers, with sources.** Users, rows, requests/sec, latency before →
+  after, dollars saved, deploy counts. Write down *where each number came
+  from and the date you measured it* — the claims gate verifies tailored
+  resumes against this file, and an interviewer will probe any number, so
+  every one should be defensible on demand. Measure now, while you still
+  have access; label estimates as estimates.
+- **Incidents and failures are high-value material**, including the ones
+  you caused. "My migration took prod down; here's the discipline I built
+  afterwards" is a stronger interview answer than any success story. Record
+  the timeline, your specific actions, and the lesson.
+- **Be precise about attribution.** Note what teammates built and where
+  your work ended. Inflated claims collapse under one follow-up question;
+  precisely-scoped ones ("I owned the backend; a colleague built the
+  mobile UI on top") survive anything.
+- Include the boring-but-rare: on-call load, compliance work, cost
+  reduction, migrations with zero downtime. These differentiate senior
+  candidates more than feature lists do.
+
+**bullet_bank.md** — distill the record into pre-written resume bullets,
+grouped by theme (backend/architecture, scale/perf, incidents/reliability,
+AI, security/compliance, leadership). Tailoring then becomes *choosing*
+bullets per JD instead of writing under deadline. Each bullet: action →
+scope → measured outcome, with every number traceable to the career
+record. Write more than fit on any resume — 30-40 is right; a tailored
+resume picks 10.
+
+**war_stories.md** — for each major incident or project in the record,
+a STAR-format story (situation, task, action, result + lesson). These are
+your behavioral-interview answers, written once, calmly, with the numbers
+in front of you — instead of reconstructed nervously in an interview.
+
 ## Daily loop
 
 ```bash
