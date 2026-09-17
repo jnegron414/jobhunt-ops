@@ -36,7 +36,9 @@ LOCATION_KEYWORDS = ["new york", "nyc", "remote", "hybrid", "united states"]
 # (kills "Infrastructure Tax Lead" / "Communications Lead, Platform" noise):
 NEGATIVE_TITLE_KEYWORDS = ["tax", "communications", "marketing", "recruit",
                            "counsel", "account executive", "people", "finance",
-                           "accountant", "workplace", "physical security"]
+                           "accountant", "workplace", "physical security",
+                           "product manager", "product design", "designer",
+                           "sales manager", "account manager"]
 
 # ---------------------------------------------------------------- scoring
 FINTECH_KEYWORDS = ["payments", "banking", "plaid", "ledger", "lending",
