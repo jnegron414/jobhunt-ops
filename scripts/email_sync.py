@@ -42,7 +42,8 @@ def get_service():
                 print(f"[email_sync] no Gmail credentials at {config.GMAIL_CREDENTIALS_PATH} — "
                       "see README 'Manual setup'. Skipping.")
                 sys.exit(0)
-            if not sys.stdin.isatty():
+            import os
+            if not (sys.stdin.isatty() or os.environ.get("JOBHUNT_OAUTH_INTERACTIVE")):
                 print("[email_sync] Gmail consent needed but not interactive (cron); "
                       "run once from a terminal. Skipping.")
                 sys.exit(0)

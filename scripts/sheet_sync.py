@@ -112,7 +112,7 @@ def push_to_sheets(pairs):
     if creds and creds.expired and creds.refresh_token:
         creds.refresh(Request())
     elif not creds or not creds.valid:
-        if not sys.stdin.isatty():
+        if not (sys.stdin.isatty() or os.environ.get("JOBHUNT_OAUTH_INTERACTIVE")):
             return False  # cron: never try to open a consent browser
         flow = InstalledAppFlow.from_client_secrets_file(
             str(config.GMAIL_CREDENTIALS_PATH), scopes)

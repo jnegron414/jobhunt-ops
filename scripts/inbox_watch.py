@@ -31,7 +31,8 @@ RECRUITER_QUERY = (
 # Senders that match the keywords but are never recruiters:
 NOISE = ["linkedin.com", "udemymail.com", "amazon.com", "sofi", "citi.com",
          "rocketmortgage", "creditkarma", "piere.com", "newsletter",
-         "no-reply", "noreply", "notifications@"]
+         "no-reply", "noreply", "notifications@", "billing", "confirmation@",
+         "receipt", "support@", "help@"]
 
 FLAGS_SCHEMA = """CREATE TABLE IF NOT EXISTS inbox_flags (
     thread_id TEXT PRIMARY KEY, kind TEXT, first_seen TEXT, subject TEXT,
@@ -78,7 +79,9 @@ def main():
     for (company,) in [tuple(r) for r in active]:
         for tid, subj, sender, from_me, ts in sweep(
                 svc, f'newer_than:3d "{company}"', me, limit=10):
-            if from_me:
+            # Skip transactional mail from the company's own product (being a
+            # CUSTOMER of a company you applied to floods this otherwise).
+            if from_me or any(n in sender.lower() for n in NOISE):
                 continue
             when = datetime.fromtimestamp(ts).strftime("%m/%d %H:%M")
             updates.append(f"- **{company}**: {subj} — from {sender} ({when})")
