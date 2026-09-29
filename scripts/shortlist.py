@@ -49,8 +49,12 @@ def main():
         basis = p["posted_at"] or p["first_seen"]
         age = (date.today() - date.fromisoformat(basis)).days
         risk_txt = f"r{risk}" + (f" ({why})" if risk else "")
+        # Stack-fit flag: TS-heavy JDs (TypeScript mentioned repeatedly or as a
+        # stated proficiency) filter poorly for a Python-first candidate.
+        raw = (p["raw_json"] or "").lower()
+        ts = " [TS-heavy]" if raw.count("typescript") >= 3 or "proficiency in typescript" in raw else ""
         lines.append(
-            f"- **{p['score']}** | {risk_txt} | {p['company']} — {p['title']} "
+            f"- **{p['score']}** | {risk_txt}{ts} | {p['company']} — {p['title']} "
             f"({p['location'] or 'n/a'}) — {age}d old\n  {p['url']}"
         )
     if suppressed:
