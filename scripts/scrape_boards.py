@@ -146,6 +146,10 @@ def score(posting, tier):
     age = posting_age_days(posting.get("posted_at"), posting.get("first_seen")) or 0
     s += next((bonus for max_days, bonus in config.RECENCY_BONUSES if age <= max_days),
               config.RECENCY_STALE)
+    # Intensity signal: founding-engineer roles surface but rank lower —
+    # typically early-stage pace/scope; a great fit can still outscore this.
+    if "founding" in title:
+        s -= 10
     return min(s, 100)
 
 
