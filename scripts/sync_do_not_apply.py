@@ -97,7 +97,15 @@ def main():
         f = r.get("fields", {})
         raw_name, stage = f.get(name_f), str(f.get(stage_f, "")).strip()
         level = stage_map.get(stage.lower())
-        if not raw_name or level in (None, "ok"):
+        if level is None and stage:
+            # FAIL CLOSED: a stage we've never seen means the relationship
+            # changed in a way we don't understand — treat as hold until a
+            # human maps it. Silently dropping it once un-blocked a company
+            # that was actually in ACTIVE deal talks.
+            print(f"[sync] WARNING: unmapped stage '{stage}' ({raw_name}) -> treating as hold; "
+                  f"add it to stage_map in do_not_apply_source.yaml")
+            level = "hold"
+        if not raw_name or level == "ok":
             continue
         for name in split_names(raw_name):
             if name.lower() in seen:
