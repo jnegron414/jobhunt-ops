@@ -24,6 +24,7 @@ Run with --inspect to print the table's field names and distinct stage
 values (for first-time setup). Exits 0 quietly when no token is configured,
 so it is safe to leave in cron before setup.
 """
+import os
 import re
 import sys
 from datetime import date
@@ -126,6 +127,39 @@ def main():
     holds = sum(1 for e in entries if e["level"] == "hold")
     print(f"[sync] wrote {DEST.name}: {holds} hold, {len(entries) - holds} caution "
           f"(from {len(records)} records)")
+    publish_hashed(entries)
+
+
+def publish_hashed(entries):
+    """Publish a privacy-preserving mirror of the list for a collaborating
+    agent that must CHECK membership without READING contents (see
+    COLLABORATION.md): {HMAC_SHA256(secret, name.strip().lower()): level}.
+    Secret is a 64-hex-char string; its UTF-8 bytes are the key. No-op unless
+    both the secret file and the state repo checkout exist."""
+    import hashlib
+    import hmac as hmac_mod
+    import json
+    import subprocess
+    secret_path = config.DATA_DIR / "hmac_secret"
+    state_repo = Path(os.environ.get("JOBHUNT_STATE_DIR", str(Path.home() / "jobhunt-state")))
+    if not (secret_path.exists() and (state_repo / ".git").exists()):
+        print("[sync] hashed publish skipped (no secret file or state repo)")
+        return
+    secret = secret_path.read_text().strip().encode()
+    hashed = {hmac_mod.new(secret, e["name"].strip().lower().encode(),
+                           hashlib.sha256).hexdigest(): e["level"] for e in entries}
+    out = state_repo / "do_not_apply.hashed.json"
+    out.write_text(json.dumps(hashed, indent=0, sort_keys=True) + "\n")
+    r = subprocess.run(["git", "-C", str(state_repo)], capture_output=True)  # git present?
+    for cmd in (["git", "-C", str(state_repo), "add", "-A"],
+                ["git", "-C", str(state_repo), "commit", "-q", "-m",
+                 "do-not-apply hashed mirror refresh"],
+                ["git", "-C", str(state_repo), "push", "-q"]):
+        r = subprocess.run(cmd, capture_output=True, text=True)
+        if r.returncode != 0 and "nothing to commit" not in (r.stdout + r.stderr):
+            print(f"[sync] hashed publish git step failed: {r.stderr.strip()[:120]}")
+            return
+    print(f"[sync] published do_not_apply.hashed.json ({len(hashed)} digests)")
 
 
 if __name__ == "__main__":

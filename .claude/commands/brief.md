@@ -2,6 +2,14 @@
 description: One-page pre-interview brief for a company/stage
 ---
 
+## State sync (collaboration contract - do this FIRST)
+
+Before anything else: `git -C ~/jobhunt-state pull -q`, then read
+`~/jobhunt-state/tracker.json` — it is the authoritative pipeline state
+(Astro owns the tracker DB; any local sqlite file is historical, never read
+it). Check `generated_at`: if older than ~24h, tell the user the state may
+be stale. Surface any files in `~/jobhunt-state/rejected/` to the user.
+
 # /brief <company> [stage]
 
 Arguments: $ARGUMENTS — company, and optionally the interview stage
@@ -12,8 +20,8 @@ Data dir: `$JOBHUNT_DATA_DIR` (default `~/jobhunt-data`; check `.env`).
 
 ## Steps
 
-1. Read tracker state READ-ONLY (never write to the DB from this command):
-   `sqlite3 $JOBHUNT_DATA_DIR/db/pipeline.sqlite3` — the application row for
+1. Read tracker state from ~/jobhunt-state/tracker.json (already pulled
+   above) — the application row for
    this company, its events, contacts, and which resume variant they saw.
    Read `output/applications/<company>/gap_notes.md` and `profile.md` if they
    exist (human edits in profile.md are authoritative).

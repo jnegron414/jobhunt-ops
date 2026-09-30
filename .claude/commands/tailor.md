@@ -46,3 +46,10 @@ Data dir: `$JOBHUNT_DATA_DIR` (default `~/jobhunt-data`; check `.env`).
   answer would change the resume materially. Otherwise proceed on reasonable
   assumptions and list them in the closing summary.
 - The gap notes are for the human, not the employer — be blunt there.
+
+## Final step: record the event
+
+If the user confirms they submitted (or asks to queue it), invoke /log with
+action add (company, role, url, stage applied, note "tailored + submitted").
+Never write to any SQLite tracker from this or any command — Astro owns the
+DB; /log's pending-file handoff is the only write path.

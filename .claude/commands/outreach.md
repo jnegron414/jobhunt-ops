@@ -2,6 +2,14 @@
 description: Draft 3 outreach variants for a company contact, in my voice
 ---
 
+## State sync (collaboration contract - do this FIRST)
+
+Before anything else: `git -C ~/jobhunt-state pull -q`, then read
+`~/jobhunt-state/tracker.json` — it is the authoritative pipeline state
+(Astro owns the tracker DB; any local sqlite file is historical, never read
+it). Check `generated_at`: if older than ~24h, tell the user the state may
+be stale. Surface any files in `~/jobhunt-state/rejected/` to the user.
+
 # /outreach <company> <contact name + context>
 
 Arguments: $ARGUMENTS — company first, then who the contact is and anything
@@ -29,8 +37,7 @@ Data dir: `$JOBHUNT_DATA_DIR` (default `~/jobhunt-data`; check `.env`).
    finds you well", no attachment mentions, no em dashes.
 4. Append a line to `profile.md` (date, contact, variant intended, hook used).
 5. Print the follow-up reminder command to run, e.g.:
-   `track next <id> "follow up with <contact>" --date <+4 business days>`
-   (if no application exists yet, print the `track add` first).
+   via /log (note on existing row, or "add" if untracked).
 
 ## Conduct
 
