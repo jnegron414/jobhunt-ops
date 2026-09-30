@@ -198,7 +198,7 @@ def main():
                         "first_seen, last_seen, posted_at, raw_json, score) "
                         "VALUES (?,?,?,?,?,?,?,?,?,?)",
                         (t["name"], p["title"], p["url"], p["location"], p["dept"],
-                         today, today, p["posted_at"], json.dumps(p["raw"])[:20000], s),
+                         today, today, p["posted_at"], json.dumps(p["raw"])[:150000], s),
                     )
                     inserted += 1
                 count += 1
