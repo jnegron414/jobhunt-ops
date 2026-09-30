@@ -104,7 +104,9 @@ def main():
     owed = []
     for tid, subj, sender, from_me, ts in sweep(svc, RECRUITER_QUERY, me, limit=30):
         s = sender.lower()
-        if any(n in s for n in NOISE):
+        # ATS notification mail (application confirmations etc.) is pipeline
+        # signal, never a recruiter awaiting a reply.
+        if any(n in s for n in NOISE) or any(d in s for d in ATS_DOMAINS):
             continue
         if from_me:
             conn.execute("UPDATE inbox_flags SET resolved_at=? "
